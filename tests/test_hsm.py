@@ -2,26 +2,46 @@
 
 """Tests for `mytardis_hsm` package."""
 from __future__ import unicode_literals
-import os
 import unittest
+try:
+    from unittest import mock
+except ImportError:
+    import mock
 
-from tempfile import NamedTemporaryFile
+from collections import namedtuple
 
 from mytardis_hsm.hsm import online
 
 
+Stats = namedtuple('Stats', ['st_size', 'st_blocks'])
+
+
 class TestHSM(unittest.TestCase):
     """Tests for HSM detection utils"""
+
     def setUp(self):
-        # Create a file with zero blocks
-        with NamedTemporaryFile(delete=False) as tf:
-            tf.seek(1048576-1)
-            tf.write(b"\0")
-            self.tmp_path = tf.name
+        """Do some setup"""
+        self.file_path = "/path/to/a/fictional/file"
 
-    def tearDown(self):
-        os.remove(self.tmp_path)
 
-    def test_000_online_file(self):
-        """online should return True for files with block_size > 0"""
-        self.assertTrue(online(self.tmp_path))
+    @mock.patch("os.stat")
+    def test_000_online_file(self, mock_stat):
+        """online should return True for files with more than 0 blocks"""
+        mock_stat.return_value = Stats(st_size=1000000, st_blocks=100)
+
+        self.assertTrue(online(self.file_path))
+
+    @mock.patch("os.stat")
+    def test_001_offline_file(self, mock_stat):
+        """online should return False for files with 0 blocks"""
+        mock_stat.return_value = Stats(st_size=1000000, st_blocks=0)
+
+        self.assertFalse(online(self.file_path))
+
+    @mock.patch("os.stat")
+    def test_002_small_file(self, mock_stat):
+        """Small files are stored in the inode and hence have 0 blocks,
+        but should nevertheless be reported as online"""
+        mock_stat.return_value = Stats(st_size=20, st_blocks=0)
+
+        self.assertTrue(online(self.file_path))
