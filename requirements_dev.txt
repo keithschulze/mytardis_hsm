@@ -1,0 +1,11 @@
+pip
+bumpversion
+wheel
+watchdog
+nose
+flake8
+tox
+coverage
+Sphinx
+
+
