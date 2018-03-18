@@ -63,3 +63,6 @@ target/
 
 # VSCode
 .vscode
+
+.pylintrc
+.nvimrc

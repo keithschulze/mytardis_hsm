@@ -70,13 +70,24 @@ Ready to contribute? Here's how to set up `mytardis_hsm` for local development.
     $ cd mytardis_hsm/
     $ python setup.py develop
 
-4. Create a branch for local development::
+4. Running and testing `mytardis_hsm` requires a local `mytardis` server. Follow the instructions at http://mytardis.readthedocs.io/en/develop/admin/install.html for installing and configuring `mytardis` for local development.
+
+5. Create a branch for local development::
 
     $ git checkout -b name-of-your-bugfix-or-feature
 
    Now you can make your changes locally.
 
-5. When you're done making changes, check that your changes pass flake8 and the tests, including testing other Python versions with tox::
+6. Edit the `setenv PYTHONPATH` variable in the `[testenv:mytardis]` section of `tox.ini` to include the path to your local `mytardis` installation setup in step 4::
+
+    [testenv:mytardis]
+    basepython=python2.7
+    setenv =
+        PYTHONPATH = {toxinidir}:/path/to/mytardis/
+
+  Replace `/path/to/mytardis` with the path to your local installation.
+
+6. When you're done making changes, check that your changes pass flake8 and the tests, including testing other Python versions with tox::
 
     $ tox
 

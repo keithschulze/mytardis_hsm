@@ -17,8 +17,22 @@ mytardis_hsm
      :target: https://pyup.io/repos/github/keithschulze/mytardis_hsm/
      :alt: Updates
 
+===========
+MyTardisHSM
+===========
 
-MyTardis App for monitoring online/offline status of DataFile/DataFileObjects in Tape based storage environments
+MyTardis App for monitoring online/offline status of DataFile/DataFileObjects in environments where backend storage is managed by an Hierachical Storage Management (HSM) system.
+
+Why?
+----
+
+When the backend storage system is managed by an HSM, you have little
+visibility into when a file might be archived to tape. This has implications
+for serving files via the web in that users can encounter terrible performance
+while trying to download files that are only on tape-based archive storage. It
+also has big implications for general MyTardis operations like verification and
+file movements. This App aims to provide tools to detect files that have been
+archived.
 
 
 * Free software: BSD license
