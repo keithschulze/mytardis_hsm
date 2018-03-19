@@ -2,17 +2,9 @@
 # This file will be regenerated if you run travis_pypi_setup.py
 
 language: python
-matrix:
-  include:
-    - python: '3.6'
-      env:
-        - TOXARGS="-e py36"
-          MYTARDIS=false
-    - python: '2.7'
-      env:
-        - TOXARGS="-e py27,mytardis"
-          MYTARDIS=true
-
+python:
+  - 3.6
+  - 2.7
 
 # command to install dependencies, e.g. pip install -r requirements.txt --use-mirrors
 install: pip install -U tox-travis
@@ -24,6 +16,5 @@ before_script:
 
 # command to run tests, e.g. python setup.py test
 script:
-  - tox $TOXARGS
-
+  - tox
 
