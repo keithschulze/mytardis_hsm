@@ -78,28 +78,30 @@ Ready to contribute? Here's how to set up `mytardis_hsm` for local development.
 
    Now you can make your changes locally.
 
-6. Edit the `setenv PYTHONPATH` variable in the `[testenv:mytardis]` section of `tox.ini` to include the path to your local `mytardis` installation setup in step 4::
-
-    [testenv:mytardis]
-    basepython=python2.7
-    setenv =
-        PYTHONPATH = {toxinidir}:/path/to/mytardis/
-
-  Replace `/path/to/mytardis` with the path to your local installation.
-
 6. When you're done making changes, check that your changes pass flake8 and the tests, including testing other Python versions with tox::
 
     $ tox
 
-   To get flake8 and tox, just pip install them into your virtualenv.
+   To get flake8 and tox, just pip install them into your virtual.
 
-6. Commit your changes and push your branch to GitHub::
+   In order to run `mytardis` tests, you need to export a `MYTARDISPATH` variable which points to the path of the local MyTardis installation from step 4::
+
+    $ MYTARDISPATH=/path/to/mytardis tox -e mytardis
+
+   or::
+
+    $ export MYTARDISPATH=/path/to/mytardis
+    $ tox -e mytardis
+
+   Note: replace `/path/to/mytardis` with the path from step 4.
+
+8. Commit your changes and push your branch to GitHub::
 
     $ git add .
     $ git commit -m "Your detailed description of your changes."
     $ git push origin name-of-your-bugfix-or-feature
 
-7. Submit a pull request through the GitHub website.
+9. Submit a pull request through the GitHub website.
 
 Pull Request Guidelines
 -----------------------

@@ -3,7 +3,7 @@ mytardis_hsm
 ============
 
 
-.. image:: https://img.shields.io/pypi/v/mytardis_hsm.svg
+.. https://img.shields.io/pypi/v/mytardis_hsm.svg
         :target: https://pypi.python.org/pypi/mytardis_hsm
 
 .. image:: https://img.shields.io/travis/keithschulze/mytardis_hsm.svg
@@ -13,7 +13,7 @@ mytardis_hsm
         :target: https://mytardis-hsm.readthedocs.io/en/latest/?badge=latest
         :alt: Documentation Status
 
-.. image:: https://pyup.io/repos/github/keithschulze/mytardis_hsm/shield.svg
+.. https://pyup.io/repos/github/keithschulze/mytardis_hsm/shield.svg
      :target: https://pyup.io/repos/github/keithschulze/mytardis_hsm/
      :alt: Updates
 
