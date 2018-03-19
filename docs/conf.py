@@ -16,11 +16,6 @@
 import sys
 import os
 
-import django
-
-
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "tardis.test_settings")
-django.setup()
 
 # If extensions (or modules to document with autodoc) are in another
 # directory, add these directories to sys.path here. If the directory is
