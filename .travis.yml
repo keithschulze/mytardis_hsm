@@ -21,7 +21,6 @@ before_script:
   - wget https://github.com/mytardis/mytardis/archive/develop.tar.gz -O /tmp/mytardis.tar.gz
   - tar -xvf /tmp/mytardis.tar.gz
   - export MYTARDISPATH=$PWD/mytardis
-YAML
 
 # command to run tests, e.g. python setup.py test
 script:
