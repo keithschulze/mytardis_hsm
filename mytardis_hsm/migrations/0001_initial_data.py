@@ -6,20 +6,24 @@ mytardis_hsm app."""
 from django.conf import settings
 from django.db import migrations
 from mytardis_hsm.mytardis_hsm import HSM_SCHEMA_NAMESPACE, df_online
+from tardis.tardis_portal.ParameterSetManager import ParameterSetManager
+from tardis.tardis_portal.models import (Schema, ParameterName, Dataset,
+                                         DataFile, DatafileParameter,
+                                         DatasetParameterSet,
+                                         DatafileParameterSet)
 
 
 def forward_func(apps, schema_editor):
     """Create HSM Schema and online ParameterName"""
-    Dataset = apps.get_model("tardis_portal", "Dataset")
-    DataFile = apps.get_model("tardis_portal", "DataFile")
-    Schema = apps.get_model("tardis_portal", "Schema")
-    ParameterName = apps.get_model("tardis_portal", "ParameterName")
-    DatasetParameterSet = apps.get_model("tardis_portal",
-                                         "DatasetParameterSet")
-    DatafileParameterSet = apps.get_model("tardis_portal",
-                                          "DatafileParameterSet")
-    DatafileParameter = apps.get_model("tardis_portal",
-                                       "DatafileParameter")
+    # Dataset = apps.get_model("tardis_portal", "Dataset")
+    # DataFile = apps.get_model("tardis_portal", "DataFile")
+    # Schema = apps.get_model("tardis_portal", "Schema")
+    # ParameterName = apps.get_model("tardis_portal", "ParameterName")
+    # DatasetParameterSet = apps.get_model("tardis_portal",
+    #                                      "DatasetParameterSet")
+    # DatafileParameterSet = apps.get_model("tardis_portal",
+    #                                       "DatafileParameterSet")
+    # DatafileParameter = apps.get_model("tardis_portal", "DatafileParameter")
 
     db_alias = schema_editor.connection.alias
     schema = Schema.objects\
@@ -42,7 +46,10 @@ def forward_func(apps, schema_editor):
         DatasetParameterSet.objects\
             .using(db_alias)\
             .create(schema=schema, dataset=ds)
+        # import pdb;pdb.set_trace()
         # ParameterSetManager(schema=schema, parentObject=ds)
+        # dps = DatasetParameterSet(schema=schema, dataset=ds)
+        # dps.save()
 
     for df in DataFile.objects.using(db_alias).all():
         if df.verified:
@@ -59,14 +66,14 @@ def forward_func(apps, schema_editor):
 
 def reverse_func(apps, schema_editor):
     """Remove HSM Schema and online ParameterName"""
-    Schema = apps.get_model("tardis_portal", "Schema")
-    ParameterName = apps.get_model("tardis_portal", "ParameterName")
-    DatasetParameterSet = apps.get_model("tardis_portal",
-                                         "DatasetParameterSet")
-    DatafileParameterSet = apps.get_model("tardis_portal",
-                                          "DatafileParameterSet")
-    DatafileParameter = apps.get_model("tardis_portal",
-                                       "DatafileParameter")
+    # Schema = apps.get_model("tardis_portal", "Schema")
+    # ParameterName = apps.get_model("tardis_portal", "ParameterName")
+    # DatasetParameterSet = apps.get_model("tardis_portal",
+    #                                      "DatasetParameterSet")
+    # DatafileParameterSet = apps.get_model("tardis_portal",
+    #                                       "DatafileParameterSet")
+    # DatafileParameter = apps.get_model("tardis_portal",
+    #                                    "DatafileParameter")
     db_alias = schema_editor.connection.alias
     schema = Schema.objects.using(db_alias)\
         .get(namespace=HSM_SCHEMA_NAMESPACE)

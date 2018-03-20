@@ -38,7 +38,9 @@ class HSMFilter(object):
 
         min_file_size = getattr(settings, "HSM_MIN_FILE_SIZE", 500)
 
-        create_df_status(instance, self.schema, min_file_size)
+        create_df_status.apply_async(
+            args=[instance, self.schema, min_file_size]
+        )
 
 
 def make_filter(name, schema):
