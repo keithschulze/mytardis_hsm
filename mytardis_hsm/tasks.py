@@ -39,7 +39,7 @@ def create_df_status(datafile, schema_name, min_file_size):
                 schema = Schema.objects.get(namespace=schema_name)
                 if DatafileParameterSet.objects.filter(
                         schema=schema, datafile=datafile).exists():
-                    LOGGER.log(
+                    LOGGER.debug(
                         """HSM DatafileParameterSet already exists for: %s""",
                         datafile.id
                     )
@@ -58,7 +58,7 @@ def create_df_status(datafile, schema_name, min_file_size):
                 dfp.save()
 
     else:
-        LOGGER.log(
+        LOGGER.warning(
             """Cannot determine online/offline status for datafile %s "
             "is not verified""",
             datafile.id

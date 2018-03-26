@@ -9,9 +9,10 @@ from django.contrib.auth.models import User
 from django.test import TestCase
 from mytardis_hsm.mytardis_hsm import DEFAULT_HSM_CLASSES
 from mytardis_hsm.utils import DatafileLock
-from tardis.tardis_portal.models import (Experiment, Dataset,
-    Facility, Group, Instrument, DataFileObject, StorageBox,
-    StorageBoxAttribute, StorageBoxOption, DataFile)
+from tardis.tardis_portal.models import (Experiment, Dataset, Facility, Group,
+                                         Instrument, DataFileObject,
+                                         StorageBox, StorageBoxAttribute,
+                                         StorageBoxOption, DataFile)
 
 
 class MyTardisHSMUtilsTestCase(TestCase):
@@ -19,8 +20,6 @@ class MyTardisHSMUtilsTestCase(TestCase):
 
     def setUp(self):
         """Setup test fixtures if needed."""
-        settings.REQUIRE_DATAFILE_SIZES = False
-        settings.REQUIRE_DATAFILE_CHECKSUMS = False
         self.user = User.objects.create_user("doctor", '',
                                              "pwd")
 
@@ -60,10 +59,11 @@ class MyTardisHSMUtilsTestCase(TestCase):
                                          value="/dummy/path")
         sbox1_loc_opt.save()
 
-        self.sbox2 = StorageBox(name="SBOX2",
-                                django_storage_class=
-                                "any.non.disk.StorageSystem",
-                                status='offline', max_size=256)
+        self.sbox2 = StorageBox(
+            name="SBOX2",
+            django_storage_class="any.non.disk.StorageSystem",
+            status='offline', max_size=256
+        )
         self.sbox2.save()
         sbox2_attr = StorageBoxAttribute(storage_box=self.sbox2,
                                          key='type',

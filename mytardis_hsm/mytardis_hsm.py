@@ -6,8 +6,14 @@ models"""
 import logging
 import os
 import hsm
+
 from django.conf import settings
-from tardis.tardis_portal.models import StorageBoxOption
+from tardis.tardis_portal.models import (StorageBoxOption, DataFile,
+                                         Dataset,
+                                         DatafileParameter,
+                                         DatafileParameterSet,
+                                         ParameterName,
+                                         Schema)
 
 
 LOGGER = logging.getLogger(__name__)
@@ -41,6 +47,14 @@ class DataFileObjectNotVerified(Exception):
 
 class StorageClassNotSupportedError(Exception):
     """Exception raised when a storage class is not supported"""
+    pass
+
+
+class OnlineParamExistsError(Exception):
+    """Exception raised when there is an attempt to create a
+    Parameter of ParameterName online for a datafile where this
+    parameter already exists
+    """
     pass
 
 
@@ -135,3 +149,86 @@ def df_online(datafile, min_file_size=350):
         raise DataFileNotVerified(
             "Cannot check online status of unverified DataFile: %s"
             % datafile.id)
+
+
+def datafile_online(datafile):
+    """Checks whether 'online' ParameterName for a datafile is True
+
+    Parameters
+    ----------
+    datafile: DataFile
+        DataFile to check online metadata for
+
+    Returns
+    -------
+    bool
+        Online/offline status of datafile
+
+    Raises
+    ------
+    DataFileParameter.DoesNotExist
+        If a Parameter for with ParameterName 'online' does not exist for
+        this datafile
+
+    Notes
+    -----
+    While this is superficially similar to df_online, they are
+    strictly different. This method simply returns the value of the
+    Parameter with ParamerName 'online' for this datafile. On the other
+    hand, `df_online` actually checks whether the file on disk for the
+    preferred DFO has > 0 blocks.
+
+    """
+    schema = Schema.objects.get(namespace=HSM_SCHEMA_NAMESPACE)
+    param_name = ParameterName.objects.get(schema=schema,
+                                           name="online")
+
+    param_set = DatafileParameterSet.objects.get(schema=schema,
+                                                 datafile=datafile)
+
+    dfp = DatafileParameter.objects.get(parameterset=param_set,
+                                        name=param_name)
+
+    return dfp.string_value == "True"
+
+
+def dataset_online(dataset):
+    """Checks whether all files in a dataset are online.
+
+    A dataset is online if all the DataFiles in the dataset are marked
+    with a metadata Parameter (ParameterName=online) where online = True.
+
+    Parameters
+    ----------
+    dataset: Dataset
+        MyTardis Dataset record to check online status of.
+
+    Returns
+    -------
+    bool
+        Status for the dataset
+    """
+    dfs = DataFile.objects.filter(dataset=dataset)
+
+    return all(datafile_online(df) for df in dfs)
+
+
+def experiment_online(experiment):
+    """Checks whether all files in an experiment are online.
+
+    An experiment is online if all the DataFiles in every dataset are marked
+    with a metadata Parameter (ParameterName=online) where online = True.
+
+    Parameters
+    ----------
+    experiment: Experiment
+        MyTardis Experiment record to check online status of.
+
+    Returns
+    -------
+    bool
+        Status for the experiment
+    """
+    dfs = Dataset.objects.filter(experiments=experiment)
+
+    return all(dataset_online(df) for df in dfs)

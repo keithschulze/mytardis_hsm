@@ -7,7 +7,6 @@ try:
 except ImportError:
     import mock
 
-import os
 import tempfile
 
 from datetime import datetime
@@ -17,11 +16,12 @@ from django.test import TestCase
 from mytardis_hsm.mytardis_hsm import (DEFAULT_HSM_CLASSES,
                                        HSM_SCHEMA_NAMESPACE)
 from mytardis_hsm.tasks import update_df_status
-from mytardis_hsm.utils import DatafileLock
-from tardis.tardis_portal.models import (Experiment, Dataset,
-    Facility, Group, Instrument, DataFileObject, StorageBox,
-    StorageBoxAttribute, StorageBoxOption, DataFile, DatafileParameter,
-    Schema, ParameterName, DatafileParameterSet)
+from tardis.tardis_portal.models import (Experiment, Dataset, Facility, Group,
+                                         Instrument, DataFileObject,
+                                         StorageBox, StorageBoxAttribute,
+                                         StorageBoxOption, DataFile,
+                                         DatafileParameter, Schema,
+                                         ParameterName, DatafileParameterSet)
 from tests.test_hsm import Stats
 
 
@@ -30,8 +30,6 @@ class MyTardisHSMTasksTestCase(TestCase):
 
     def setUp(self):
         """Setup test fixtures if needed."""
-        settings.REQUIRE_DATAFILE_SIZES = False
-        settings.REQUIRE_DATAFILE_CHECKSUMS = False
         self.user = User.objects.create_user("doctor", '',
                                              "pwd")
 
@@ -94,7 +92,6 @@ class MyTardisHSMTasksTestCase(TestCase):
                               uri="stream/test.jpg",
                               verified=True)
         dfo1.save()
-        df1.verify()
 
         schema = Schema.objects.get(namespace=HSM_SCHEMA_NAMESPACE)
         ps = DatafileParameterSet(schema=schema, datafile=df1)
@@ -111,7 +108,7 @@ class MyTardisHSMTasksTestCase(TestCase):
         update_df_status(min_file_size=500)
 
         params = DatafileParameter.objects.filter(
-            parameterset__schema__namespace=HSM_SCHEMA_NAMESPACE,
+            parameterset__schema=schema,
             parameterset__datafile=df1)
 
         self.assertEquals(params.count(), 1)
@@ -130,7 +127,7 @@ class MyTardisHSMTasksTestCase(TestCase):
                               uri="stream/test.jpg",
                               verified=True)
         dfo1.save()
-        df1.verify()
+        # df1.verify()
 
         schema = Schema.objects.get(namespace=HSM_SCHEMA_NAMESPACE)
         ps = DatafileParameterSet(schema=schema, datafile=df1)
@@ -193,7 +190,7 @@ class MyTardisHSMTasksTestCase(TestCase):
                               uri="stream/test_df2.jpg",
                               verified=True)
         dfo2.save()
-        df2.verify()
+        # df2.verify()
 
         schema = Schema.objects.get(namespace=HSM_SCHEMA_NAMESPACE)
         ps2 = DatafileParameterSet(schema=schema, datafile=df2)
@@ -211,54 +208,3 @@ class MyTardisHSMTasksTestCase(TestCase):
 
         # assert that the df_online method wasn't called
         self.assertEquals(mock_df_online.call_count, 0)
-
-    @mock.patch("os.stat")
-    def test_004_create_df_status(self, mock_stat):
-        """When a new datafile record is verified, metadata for it's
-        online/offline status should be created and populated with the
-        current online status"""
-
-        with self.modify_settings(
-            # MIDDLEWARE_CLASSES={
-            #     'append': 'tardis.tardis_portal.filters.FilterInitMiddleware'
-            # },
-            FILTER_MIDDLEWARE={
-                'append': [("tardis.tardis_portal.filters",
-                           "FilterInitMiddleware")]
-            },
-            POST_SAVE_FILTERS={
-                'append': [('mytardis_hsm.filters.make_filter',
-                            ["HSMFilter",
-                             "http://tardis.edu.au/hsm/1"])]
-            }
-        ):
-            mock_stat.return_value = Stats(st_size=10000,
-                                           st_blocks=100,
-                                           st_mtime=datetime.now())
-
-            temp = tempfile.NamedTemporaryFile(dir=tempfile.gettempdir())
-            temp_name = os.path.basename(temp.name)
-            df2 = DataFile(dataset=self.dataset,
-                           filename=temp_name)
-            df2.save()
-            dfo2 = DataFileObject(datafile=df2,
-                                  storage_box=self.sbox1,
-                                  uri=temp_name)
-            dfo2.save()
-            df2.verify()
-
-            param_name = ParameterName.objects.get(
-                schema__namespace=HSM_SCHEMA_NAMESPACE,
-                name="online")
-
-            paramset = DatafileParameterSet.objects.get(
-                schema__namespace=HSM_SCHEMA_NAMESPACE,
-                datafile=df2)
-
-            param = DatafileParameter.objects.get(
-                parameterset=paramset,
-                name=param_name
-            )
-
-            self.assertEquals(param.string_value, "True")
-            temp.close()

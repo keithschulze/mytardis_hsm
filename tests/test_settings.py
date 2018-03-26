@@ -18,3 +18,7 @@ INSTALLED_APPS += (
 #    ("mytardis_hsm.filters.make_filter",
 #    ["HSMFilter", "http://tardis.edu.au/hsm/1"]),
 # ]
+
+
+REQUIRE_DATAFILE_SIZES = False
+REQUIRE_DATAFILE_CHECKSUMS = False

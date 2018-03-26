@@ -11,11 +11,14 @@ from django.conf import settings
 from django.contrib.auth.models import User
 from django.test import TestCase
 from mytardis_hsm.mytardis_hsm import (dfo_online, df_online,
-    DEFAULT_HSM_CLASSES, StorageClassNotSupportedError,
-    DataFileNotVerified, DataFileObjectNotVerified)
-from tardis.tardis_portal.models import (Experiment, Dataset,
-    Facility, Group, Instrument, DataFileObject, StorageBox,
-    StorageBoxAttribute, StorageBoxOption, DataFile, Schema)
+                                       DEFAULT_HSM_CLASSES,
+                                       StorageClassNotSupportedError,
+                                       DataFileNotVerified,
+                                       DataFileObjectNotVerified)
+from tardis.tardis_portal.models import (Experiment, Dataset, Facility, Group,
+                                         Instrument, DataFileObject,
+                                         StorageBox, StorageBoxAttribute,
+                                         StorageBoxOption, DataFile, Schema)
 from tests.test_hsm import Stats
 
 
@@ -24,8 +27,6 @@ class TestMytardisHSM(TestCase):
 
     def setUp(self):
         """Setup test fixtures if needed."""
-        settings.REQUIRE_DATAFILE_SIZES = False
-        settings.REQUIRE_DATAFILE_CHECKSUMS = False
         self.user = User.objects.create_user("doctor", '',
                                              "pwd")
 
@@ -41,12 +42,12 @@ class TestMytardisHSM(TestCase):
                             manager_group=group)
         facility.save()
 
-        inst = Instrument(name="Test Instrument1",
-                          facility=facility)
-        inst.save()
+        self.inst = Instrument(name="Test Instrument1",
+                               facility=facility)
+        self.inst.save()
 
         self.dataset = Dataset(description="Dataset1",
-                               instrument=inst)
+                               instrument=self.inst)
         self.dataset.save()
 
         storage_classes = getattr(settings,
@@ -65,10 +66,11 @@ class TestMytardisHSM(TestCase):
                                          value="/dummy/path")
         sbox1_loc_opt.save()
 
-        self.sbox2 = StorageBox(name="SBOX2",
-                                django_storage_class=
-                                "any.non.disk.StorageSystem",
-                                status='offline', max_size=256)
+        self.sbox2 = StorageBox(
+            name="SBOX2",
+            django_storage_class="any.non.disk.StorageSystem",
+            status='offline',
+            max_size=256)
         self.sbox2.save()
         sbox2_attr = StorageBoxAttribute(storage_box=self.sbox2,
                                          key='type',
@@ -109,14 +111,18 @@ class TestMytardisHSM(TestCase):
     def test_003_dfo_online(self, mock_stat):
         """HSM.online should return True when a DFOs underlying file
         has > 0 blocks"""
-        mock_stat.return_value = Stats(st_size=10000, st_blocks=100, st_mtime=datetime.now())
+        mock_stat.return_value = Stats(st_size=10000,
+                                       st_blocks=100,
+                                       st_mtime=datetime.now())
         self.assertTrue(dfo_online(self.dfo1))
 
     @mock.patch("os.stat")
     def test_004_dfo_offline(self, mock_stat):
         """HSM.online should return False when a DFOs underlying file
         is > 350 bytes and 0 blocks"""
-        mock_stat.return_value = Stats(st_size=10000, st_blocks=0, st_mtime=datetime.now())
+        mock_stat.return_value = Stats(st_size=10000,
+                                       st_blocks=0,
+                                       st_mtime=datetime.now())
         self.assertFalse(dfo_online(self.dfo1))
 
     def test_005_dfo_non_disk(self):
@@ -129,9 +135,7 @@ class TestMytardisHSM(TestCase):
         self.assertRaises(StorageClassNotSupportedError, dfo_online, dfo2)
 
         with self.settings(
-            HSM_STORAGE_CLASSES=[
-                "random.storage.CLASS"
-            ]
+            HSM_STORAGE_CLASSES=["random.storage.CLASS"]
         ):
             self.assertRaises(
                 StorageClassNotSupportedError,
@@ -140,7 +144,11 @@ class TestMytardisHSM(TestCase):
             )
 
     def test_006_hsm_schema(self):
-        self.assertEqual(Schema.objects.filter(namespace="http://tardis.edu.au/hsm/1").count(), 1)
+        """HSM schema should be installed"""
+        schemas = Schema.objects\
+            .filter(namespace="http://tardis.edu.au/hsm/1")\
+            .count()
+        self.assertEqual(schemas, 1)
 
     def test_007_dfo_unverified(self):
         """df_online and dfo_online should raise Exception for an unverfied DataFile or
@@ -157,4 +165,3 @@ class TestMytardisHSM(TestCase):
         dfo2.save()
 
         self.assertRaises(DataFileObjectNotVerified, dfo_online, dfo2)
-
