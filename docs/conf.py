@@ -17,23 +17,21 @@ import sys
 import os
 
 try:
-    import unittest.mock
+    from unittest.mock import MagicMock
 except ImportError:
-    import mock
+    from mock import Mock as MagicMock
 
 from django.conf import settings
 
 settings.configure()
 
-sys.path.insert(0, os.path.abspath('../'))
-
-class Mock(mock.Mock):
+class Mock(MagicMock):
     @classmethod
     def __getattr__(cls, name):
-        return mock.Mock()
+        return MagicMock()
 
 MOCK_MODULES = ['tardis', 'tardis.tardis_portal', 'tardis.tardis_portal.models']
-sys.modules.update((mod_name, mock.Mock()) for mod_name in MOCK_MODULES)
+sys.modules.update((mod_name, Mock()) for mod_name in MOCK_MODULES)
 
 # If extensions (or modules to document with autodoc) are in another
 # directory, add these directories to sys.path here. If the directory is
