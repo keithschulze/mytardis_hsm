@@ -6,6 +6,7 @@ HSM status of Datafiles in MyTardis"""
 import logging
 
 from celery.task import task
+from django.conf import settings
 from tardis.tardis_portal.models import (DatafileParameter,
                                          DatafileParameterSet,
                                          ParameterName,
@@ -66,15 +67,14 @@ def create_df_status(datafile, schema_name, min_file_size):
 
 
 @task(name="mytardis_hsm.update_df_status")
-def update_df_status(min_file_size):
+def update_df_status():
     """Celery task that checks for a change in HSM status for
     all online (verified) DataFiles.
 
-    Parameters
-    ----------
-    min_file_size : int
-        minimum size of files to check HSM status of. This param
-        is simply passed on to df_online.
+    Notes
+    -----
+    Minimum size of files to check HSM status of is read from
+    settings otherwise default is 500 bytes.
     """
     param_name = ParameterName.objects.get(
         schema__namespace=HSM_SCHEMA_NAMESPACE,
@@ -86,6 +86,7 @@ def update_df_status(min_file_size):
         string_value="True"
     ).select_related('parameterset__datafile')
 
+    min_file_size = getattr(settings, "HSM_MIN_FILE_SIZE", 500)
     for param in online_params:
         df = param.parameterset.datafile
 

@@ -105,7 +105,7 @@ class MyTardisHSMTasksTestCase(TestCase):
         mock_stat.return_value = Stats(st_size=10000,
                                        st_blocks=0,
                                        st_mtime=datetime.now())
-        update_df_status(min_file_size=500)
+        update_df_status()
 
         params = DatafileParameter.objects.filter(
             parameterset__schema=schema,
@@ -141,7 +141,7 @@ class MyTardisHSMTasksTestCase(TestCase):
         mock_stat.return_value = Stats(st_size=10000,
                                        st_blocks=100,
                                        st_mtime=datetime.now())
-        update_df_status(min_file_size=500)
+        update_df_status()
 
         params = DatafileParameter.objects.filter(
             parameterset__schema__namespace=HSM_SCHEMA_NAMESPACE,
@@ -174,7 +174,7 @@ class MyTardisHSMTasksTestCase(TestCase):
         mock_stat.return_value = Stats(st_size=10000,
                                        st_blocks=100,
                                        st_mtime=datetime.now())
-        update_df_status(500)
+        update_df_status()
         df_online.assert_not_called()
 
     @mock.patch('mytardis_hsm.tasks.df_online', autopec=True)
@@ -204,7 +204,7 @@ class MyTardisHSMTasksTestCase(TestCase):
         mock_stat.return_value = Stats(st_size=10000,
                                        st_blocks=100,
                                        st_mtime=datetime.now())
-        update_df_status(500)
+        update_df_status()
 
         # assert that the df_online method wasn't called
         self.assertEquals(mock_df_online.call_count, 0)
