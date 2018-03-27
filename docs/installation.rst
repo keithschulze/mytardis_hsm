@@ -12,9 +12,9 @@ To install mytardis_hsm, run this command in your terminal:
 
 .. code-block:: console
 
-    $ pip install mytardis_hsm
+    $ pip install -e git+https://github.com/keithschulze/mytardis_hsm#egg=mytardis_hsm
 
-This is the preferred method to install mytardis_hsm, as it will always install the most recent stable release. 
+This is the preferred method to install mytardis_hsm, as it will always install the most recent stable release.
 
 If you don't have `pip`_ installed, this `Python installation guide`_ can guide
 you through the process.

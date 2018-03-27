@@ -33,6 +33,10 @@ def create_df_status(datafile, schema_name, min_file_size):
     min_file_size : int
         minimum size of files to check HSM status of. This
         param is simply passed on to df_online.
+
+    Returns
+    -------
+    None
     """
     if datafile.verified:
         with DatafileLock(datafile, "datafile-%s" % datafile.id) as lock:
@@ -70,6 +74,11 @@ def create_df_status(datafile, schema_name, min_file_size):
 def update_df_status():
     """Celery task that checks for a change in HSM status for
     all online (verified) DataFiles.
+
+    Returns
+    -------
+    None
+
 
     Notes
     -----

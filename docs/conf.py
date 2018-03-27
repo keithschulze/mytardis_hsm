@@ -16,6 +16,22 @@
 import sys
 import os
 
+try:
+    import unittest.mock
+except ImportError:
+    import mock
+
+from django.conf import settings
+
+settings.configure()
+
+class Mock(mock.Mock):
+    @classmethod
+    def __getattr__(cls, name):
+        return mock.Mock()
+
+MOCK_MODULES = ['tardis', 'tardis.tardis_portal', 'tardis.tardis_portal.models']
+sys.modules.update((mod_name, mock.Mock()) for mod_name in MOCK_MODULES)
 
 # If extensions (or modules to document with autodoc) are in another
 # directory, add these directories to sys.path here. If the directory is

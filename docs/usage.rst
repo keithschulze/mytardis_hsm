@@ -11,10 +11,10 @@ tools provided by `mytardis_hsm` use the Python `os` tools to detect the status
 of files. Hence, `mytardis_hsm` only supports filesystem based storage
 backends, not things like object storage. The way `mytardis_hsm` enforces this
 is via the `django_storage_class` attribute of the StorageBox. By default,
-`mytardis_hsm` supports the following `django_storage_class`'s:
+`mytardis_hsm` supports the following `django_storage_class`'s::
 
-- django.core.files.storage.FileSystemStorage
-- tardis.tardis_portal.storage.MyTardisLocalFileSystem
+  - django.core.files.storage.FileSystemStorage
+  - tardis.tardis_portal.storage.MyTardisLocalFileSystem
 
 This is defined by `DEFAULT_HSM_CLASSES` in the `mytardis_hsm.mytardis_hsm`. It
 is, however, configurable by setting `HSM_STORAGE_CLASSES` in `settings.py`.

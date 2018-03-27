@@ -19,6 +19,10 @@ from tardis.tardis_portal.models import (StorageBoxOption, DataFile,
 LOGGER = logging.getLogger(__name__)
 
 
+DEFAULT_HSM_CLASSES = [
+    "tardis.tardis_portal.storage.MyTardisLocalFileSystemStorage",
+    "django.core.files.storage.FileSystemStorage"
+]
 """Default supported values for `django_storage_class` in StorageBox
 
 In order to prevent checking online status of unsupported (i.e., non-
@@ -27,13 +31,10 @@ StorageBox. The default supported value are defined by this constant.
 If you need to add or override these defaults, you can supply a different
 list of support storage class as the HSM_STORAGE_CLASSES field in settings.py
 """
-DEFAULT_HSM_CLASSES = [
-    "tardis.tardis_portal.storage.MyTardisLocalFileSystemStorage",
-    "django.core.files.storage.FileSystemStorage"
-]
 
 HSM_SCHEMA_NAMESPACE = "http://tardis.edu.au/hsm/1"
-
+"""Schema Namespace for HSM metadata
+"""
 
 class DataFileNotVerified(Exception):
     """Exception raied when an operation is attempted on an
