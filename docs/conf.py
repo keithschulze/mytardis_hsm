@@ -25,6 +25,8 @@ from django.conf import settings
 
 settings.configure()
 
+sys.path.insert(0, os.path.abspath('../'))
+
 class Mock(mock.Mock):
     @classmethod
     def __getattr__(cls, name):
