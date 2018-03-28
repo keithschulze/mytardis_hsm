@@ -25,7 +25,7 @@ test_requirements = [
 
 setup(
     name='mytardis_hsm',
-    version='0.1.0',
+    version='0.2.0',
     description="MyTardis App for monitoring online/offline status of DataFile/DataFileObjects in Tape based storage environments",
     long_description=readme + '\n\n' + history,
     author="Keith Schulze",
