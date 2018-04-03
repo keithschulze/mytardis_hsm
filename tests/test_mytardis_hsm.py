@@ -146,7 +146,7 @@ class TestMytardisHSM(TestCase):
     def test_006_hsm_schema(self):
         """HSM schema should be installed"""
         schemas = Schema.objects\
-            .filter(namespace="http://tardis.edu.au/hsm/1")\
+            .filter(namespace="http://tardis.edu.au/schemas/hsm/datafile/1")\
             .count()
         self.assertEqual(schemas, 1)
 

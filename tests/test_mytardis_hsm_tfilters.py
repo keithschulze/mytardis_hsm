@@ -15,7 +15,7 @@ from django.conf import settings
 from django.contrib.auth.models import User
 from django.test import (TestCase, modify_settings)
 from mytardis_hsm.mytardis_hsm import (DEFAULT_HSM_CLASSES,
-                                       HSM_SCHEMA_NAMESPACE,
+                                       HSM_DATAFILE_NAMESPACE,
                                        OnlineParamExistsError,
                                        dataset_online,
                                        experiment_online)
@@ -37,7 +37,7 @@ from tests.test_hsm import Stats
     POST_SAVE_FILTERS={
         'append': [('mytardis_hsm.filters.make_filter',
                     ["HSMFilter",
-                     "http://tardis.edu.au/hsm/1"])]
+                     "http://tardis.edu.au/schemas/hsm/datafile/1"])]
     }
 )
 class MyTardisHSMTFiltersTestCase(TestCase):
@@ -117,11 +117,11 @@ class MyTardisHSMTFiltersTestCase(TestCase):
         df2.verify()
 
         param_name = ParameterName.objects.get(
-            schema__namespace=HSM_SCHEMA_NAMESPACE,
+            schema__namespace=HSM_DATAFILE_NAMESPACE,
             name="online")
 
         paramset = DatafileParameterSet.objects.get(
-            schema__namespace=HSM_SCHEMA_NAMESPACE,
+            schema__namespace=HSM_DATAFILE_NAMESPACE,
             datafile=df2)
 
         param = DatafileParameter.objects.get(
@@ -150,11 +150,11 @@ class MyTardisHSMTFiltersTestCase(TestCase):
         df1.verify()
 
         param_name = ParameterName.objects.get(
-            schema__namespace=HSM_SCHEMA_NAMESPACE,
+            schema__namespace=HSM_DATAFILE_NAMESPACE,
             name="online")
 
         paramset = DatafileParameterSet.objects.get(
-            schema__namespace=HSM_SCHEMA_NAMESPACE,
+            schema__namespace=HSM_DATAFILE_NAMESPACE,
             datafile=df1)
 
         params = DatafileParameter.objects.filter(
@@ -165,7 +165,7 @@ class MyTardisHSMTFiltersTestCase(TestCase):
         self.assertEquals(params.count(), 1)
 
         self.assertRaises(OnlineParamExistsError,
-                          create_df_status(df1, HSM_SCHEMA_NAMESPACE, 500))
+                          create_df_status(df1, HSM_DATAFILE_NAMESPACE, 500))
 
         params = DatafileParameter.objects.filter(
             parameterset=paramset,

@@ -5,7 +5,11 @@ mytardis_hsm app."""
 
 from django.conf import settings
 from django.db import migrations
-from mytardis_hsm.mytardis_hsm import HSM_SCHEMA_NAMESPACE, df_online
+from mytardis_hsm.mytardis_hsm import (
+    HSM_DATAFILE_NAMESPACE,
+    HSM_DATASET_NAMESPACE,
+    df_online
+)
 from tardis.tardis_portal.models import (Schema, ParameterName, Dataset,
                                          DataFile, DatafileParameter,
                                          DatasetParameterSet,
@@ -15,12 +19,20 @@ from tardis.tardis_portal.models import (Schema, ParameterName, Dataset,
 def forward_func(apps, schema_editor):
     """Create HSM Schema and online ParameterName"""
     db_alias = schema_editor.connection.alias
-    schema = Schema.objects\
+    df_schema = Schema.objects\
         .using(db_alias)\
-        .create(namespace=HSM_SCHEMA_NAMESPACE,
-                name="MyTardis HSM Schema",
+        .create(namespace=HSM_DATAFILE_NAMESPACE,
+                name="Datafile HSM Schema",
                 hidden=True,
                 type=3,
+                immutable=True)
+
+    ds_schema = Schema.objects\
+        .using(db_alias)\
+        .create(namespace=HSM_DATASET_NAMESPACE,
+                name="Dataset HSM Schema",
+                hidden=True,
+                type=2,
                 immutable=True)
 
     param_name = ParameterName.objects\
@@ -28,19 +40,19 @@ def forward_func(apps, schema_editor):
         .create(
             name="online",
             full_name="Is Online",
-            schema=schema)
+            schema=df_schema)
 
     min_file_size = getattr(settings, "HSM_MIN_FILE_SIZE", 500)
     for ds in Dataset.objects.using(db_alias).all():
         DatasetParameterSet.objects\
             .using(db_alias)\
-            .create(schema=schema, dataset=ds)
+            .create(schema=ds_schema, dataset=ds)
 
     for df in DataFile.objects.using(db_alias).all():
         if df.verified:
             dfps = DatafileParameterSet.objects\
                 .using(db_alias)\
-                .create(schema=schema, datafile=df)
+                .create(schema=df_schema, datafile=df)
 
             dp = DatafileParameter.objects\
                 .using(db_alias)\
@@ -52,11 +64,14 @@ def forward_func(apps, schema_editor):
 def reverse_func(apps, schema_editor):
     """Remove HSM Schema and online ParameterName"""
     db_alias = schema_editor.connection.alias
-    schema = Schema.objects.using(db_alias)\
-        .get(namespace=HSM_SCHEMA_NAMESPACE)
+    df_schema = Schema.objects.using(db_alias)\
+        .get(namespace=HSM_DATAFILE_NAMESPACE)
+
+    ds_schema = Schema.objects.using(db_alias)\
+        .get(namespace=HSM_DATASET_NAMESPACE)
 
     param_names = ParameterName.objects.using(db_alias)\
-        .filter(schema=schema)
+        .filter(schema=df_schema)
 
     for pn in param_names:
         DatafileParameter.objects\
@@ -66,11 +81,13 @@ def reverse_func(apps, schema_editor):
 
     DatafileParameterSet.objects\
         .using(db_alias)\
-        .filter(schema=schema).delete()
+        .filter(schema=df_schema).delete()
     DatasetParameterSet.objects\
         .using(db_alias)\
-        .filter(schema=schema).delete()
-    schema.delete()
+        .filter(schema=ds_schema).delete()
+
+    df_schema.delete()
+    ds_schema.delete()
 
 
 class Migration(migrations.Migration):

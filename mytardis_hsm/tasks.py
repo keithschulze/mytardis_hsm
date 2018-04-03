@@ -11,7 +11,7 @@ from tardis.tardis_portal.models import (DatafileParameter,
                                          DatafileParameterSet,
                                          ParameterName,
                                          Schema)
-from .mytardis_hsm import (df_online, HSM_SCHEMA_NAMESPACE)
+from .mytardis_hsm import (df_online, HSM_DATAFILE_NAMESPACE)
 from .utils import DatafileLock
 
 
@@ -86,11 +86,11 @@ def update_df_status():
     settings otherwise default is 500 bytes.
     """
     param_name = ParameterName.objects.get(
-        schema__namespace=HSM_SCHEMA_NAMESPACE,
+        schema__namespace=HSM_DATAFILE_NAMESPACE,
         name="online")
 
     online_params = DatafileParameter.objects.filter(
-        parameterset__schema__namespace=HSM_SCHEMA_NAMESPACE,
+        parameterset__schema__namespace=HSM_DATAFILE_NAMESPACE,
         name=param_name,
         string_value="True"
     ).select_related('parameterset__datafile')

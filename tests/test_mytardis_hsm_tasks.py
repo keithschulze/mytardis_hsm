@@ -14,7 +14,7 @@ from django.conf import settings
 from django.contrib.auth.models import User
 from django.test import TestCase
 from mytardis_hsm.mytardis_hsm import (DEFAULT_HSM_CLASSES,
-                                       HSM_SCHEMA_NAMESPACE)
+                                       HSM_DATAFILE_NAMESPACE)
 from mytardis_hsm.tasks import update_df_status
 from tardis.tardis_portal.models import (Experiment, Dataset, Facility, Group,
                                          Instrument, DataFileObject,
@@ -93,7 +93,7 @@ class MyTardisHSMTasksTestCase(TestCase):
                               verified=True)
         dfo1.save()
 
-        schema = Schema.objects.get(namespace=HSM_SCHEMA_NAMESPACE)
+        schema = Schema.objects.get(namespace=HSM_DATAFILE_NAMESPACE)
         ps = DatafileParameterSet(schema=schema, datafile=df1)
         ps.save()
 
@@ -129,7 +129,7 @@ class MyTardisHSMTasksTestCase(TestCase):
         dfo1.save()
         # df1.verify()
 
-        schema = Schema.objects.get(namespace=HSM_SCHEMA_NAMESPACE)
+        schema = Schema.objects.get(namespace=HSM_DATAFILE_NAMESPACE)
         ps = DatafileParameterSet(schema=schema, datafile=df1)
         ps.save()
 
@@ -144,7 +144,7 @@ class MyTardisHSMTasksTestCase(TestCase):
         update_df_status()
 
         params = DatafileParameter.objects.filter(
-            parameterset__schema__namespace=HSM_SCHEMA_NAMESPACE,
+            parameterset__schema__namespace=HSM_DATAFILE_NAMESPACE,
             parameterset__datafile=df1)
 
         self.assertEquals(params.count(), 1)
@@ -162,7 +162,7 @@ class MyTardisHSMTasksTestCase(TestCase):
                               uri="stream/test_df2.jpg")
         dfo2.save()
 
-        schema = Schema.objects.get(namespace=HSM_SCHEMA_NAMESPACE)
+        schema = Schema.objects.get(namespace=HSM_DATAFILE_NAMESPACE)
         ps2 = DatafileParameterSet(schema=schema, datafile=df2)
         ps2.save()
 
@@ -192,7 +192,7 @@ class MyTardisHSMTasksTestCase(TestCase):
         dfo2.save()
         # df2.verify()
 
-        schema = Schema.objects.get(namespace=HSM_SCHEMA_NAMESPACE)
+        schema = Schema.objects.get(namespace=HSM_DATAFILE_NAMESPACE)
         ps2 = DatafileParameterSet(schema=schema, datafile=df2)
         ps2.save()
 

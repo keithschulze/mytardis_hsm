@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 
-from mytardis_hsm.mytardis_hsm import DEFAULT_HSM_CLASSES
+from mytardis_hsm.mytardis_hsm import (
+    DEFAULT_HSM_CLASSES
+)
 
 # Minimum file size to check online/offline status for.
 # Files smaller than this are usually retained in inode.

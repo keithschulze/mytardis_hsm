@@ -32,9 +32,14 @@ If you need to add or override these defaults, you can supply a different
 list of support storage class as the HSM_STORAGE_CLASSES field in settings.py
 """
 
-HSM_SCHEMA_NAMESPACE = "http://tardis.edu.au/hsm/1"
-"""Schema Namespace for HSM metadata
+HSM_DATAFILE_NAMESPACE = "http://tardis.edu.au/schemas/hsm/datafile/1"
+"""Schema Namespace for HSM Datafile metadata
 """
+
+HSM_DATASET_NAMESPACE = "http://tardis.edu.au/schemas/hsm/dataset/1"
+"""Schema Namespace for HSM Dataset metadata
+"""
+
 
 class DataFileNotVerified(Exception):
     """Exception raied when an operation is attempted on an
@@ -180,7 +185,7 @@ def datafile_online(datafile):
     preferred DFO has > 0 blocks.
 
     """
-    schema = Schema.objects.get(namespace=HSM_SCHEMA_NAMESPACE)
+    schema = Schema.objects.get(namespace=HSM_DATAFILE_NAMESPACE)
     param_name = ParameterName.objects.get(schema=schema,
                                            name="online")
 
