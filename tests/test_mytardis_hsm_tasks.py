@@ -13,9 +13,13 @@ from datetime import datetime
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.test import TestCase
+from mytardis_hsm.models import HSMConfig
 from mytardis_hsm.mytardis_hsm import (DEFAULT_HSM_CLASSES,
                                        HSM_DATAFILE_NAMESPACE)
-from mytardis_hsm.tasks import update_df_status
+from mytardis_hsm.tasks import (
+    update_df_status,
+    create_df_status
+)
 from tardis.tardis_portal.models import (Experiment, Dataset, Facility, Group,
                                          Instrument, DataFileObject,
                                          StorageBox, StorageBoxAttribute,
@@ -69,6 +73,12 @@ class MyTardisHSMTasksTestCase(TestCase):
                                          value=tempfile.gettempdir())
         sbox1_loc_opt.save()
 
+        sbox1_hsm_config = HSMConfig(
+            storage_box=self.sbox1,
+            status_checker=HSMConfig.FILESYSTEM
+        )
+        sbox1_hsm_config.save()
+
         self.sbox2 = StorageBox(
             name="SBOX2",
             django_storage_class="any.non.disk.StorageSystem",
@@ -105,7 +115,8 @@ class MyTardisHSMTasksTestCase(TestCase):
         mock_stat.return_value = Stats(st_size=10000,
                                        st_blocks=0,
                                        st_mtime=datetime.now())
-        update_df_status()
+
+        update_df_status(HSM_DATAFILE_NAMESPACE)
 
         params = DatafileParameter.objects.filter(
             parameterset__schema=schema,
@@ -141,7 +152,8 @@ class MyTardisHSMTasksTestCase(TestCase):
         mock_stat.return_value = Stats(st_size=10000,
                                        st_blocks=100,
                                        st_mtime=datetime.now())
-        update_df_status()
+
+        update_df_status(HSM_DATAFILE_NAMESPACE)
 
         params = DatafileParameter.objects.filter(
             parameterset__schema__namespace=HSM_DATAFILE_NAMESPACE,
@@ -174,7 +186,7 @@ class MyTardisHSMTasksTestCase(TestCase):
         mock_stat.return_value = Stats(st_size=10000,
                                        st_blocks=100,
                                        st_mtime=datetime.now())
-        update_df_status()
+        update_df_status(HSM_DATAFILE_NAMESPACE)
         df_online.assert_not_called()
 
     @mock.patch('mytardis_hsm.tasks.df_online', autopec=True)
@@ -204,7 +216,36 @@ class MyTardisHSMTasksTestCase(TestCase):
         mock_stat.return_value = Stats(st_size=10000,
                                        st_blocks=100,
                                        st_mtime=datetime.now())
-        update_df_status()
+        update_df_status(HSM_DATAFILE_NAMESPACE)
 
         # assert that the df_online method wasn't called
         self.assertEquals(mock_df_online.call_count, 0)
+
+    @mock.patch("os.stat")
+    def test_004_create_df_status(self, mock_stat):
+        """create_df_status should check the online status of
+        preferred DFO of a DF and create and online Parameter."""
+        df1 = DataFile(dataset=self.dataset,
+                       filename="test_df.jpg")
+        df1.save()
+        dfo1 = DataFileObject(datafile=df1,
+                              storage_box=self.sbox1,
+                              uri="stream/test.jpg",
+                              verified=True)
+        dfo1.save()
+
+        mock_stat.return_value = Stats(st_size=10000,
+                                       st_blocks=0,
+                                       st_mtime=datetime.now())
+
+        create_df_status(df1, HSM_DATAFILE_NAMESPACE)
+
+        schema = Schema.objects.get(namespace=HSM_DATAFILE_NAMESPACE)
+
+        params = DatafileParameter.objects.filter(
+            parameterset__schema=schema,
+            parameterset__datafile=df1)
+
+        self.assertEquals(params.count(), 1)
+        self.assertEquals(params[0].string_value, "False")
+

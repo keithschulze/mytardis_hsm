@@ -19,9 +19,16 @@ is via the `django_storage_class` attribute of the StorageBox. By default,
 This is defined by `DEFAULT_HSM_CLASSES` in the `mytardis_hsm.mytardis_hsm`. It
 is, however, configurable by setting `HSM_STORAGE_CLASSES` in `settings.py`.
 `HSM_STORAGE_CLASSES` should be a list of strings for the Django storage
-classes you wish to support. Note that these storage classes must be file based
-and have a StorageBoxOption with a `location` key that has the location in the
-filesystem as its value.
+classes you wish to support. For example, to add another storage class::
+
+    HSM_STORAGE_CLASSES = settings.HSM_STORAGE_CLASSES + ['another.storage.Class']
+
+Or to override storage classes::
+
+    HSM_STORAGE_CLASSES = ['another.storage.Class']
+
+Note that these storage classes must be file based and have a StorageBoxOption
+with a ``location`` key that has the location in the filesystem as its value.
 
 To use mytardis_hsm in a project::
 

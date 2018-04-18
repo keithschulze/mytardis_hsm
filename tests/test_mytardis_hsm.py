@@ -15,6 +15,7 @@ from mytardis_hsm.mytardis_hsm import (dfo_online, df_online,
                                        StorageClassNotSupportedError,
                                        DataFileNotVerified,
                                        DataFileObjectNotVerified)
+from mytardis_hsm.models import HSMConfig
 from tardis.tardis_portal.models import (Experiment, Dataset, Facility, Group,
                                          Instrument, DataFileObject,
                                          StorageBox, StorageBoxAttribute,
@@ -66,6 +67,13 @@ class TestMytardisHSM(TestCase):
                                          value="/dummy/path")
         sbox1_loc_opt.save()
 
+        sbox1_hsm_config = HSMConfig(
+            storage_box=self.sbox1,
+            status_checker=HSMConfig.FILESYSTEM,
+            retriever=HSMConfig.FILESYSTEM
+        )
+        sbox1_hsm_config.save()
+
         self.sbox2 = StorageBox(
             name="SBOX2",
             django_storage_class="any.non.disk.StorageSystem",
@@ -102,7 +110,7 @@ class TestMytardisHSM(TestCase):
         exps = Experiment.objects.all()
         self.assertEqual(exps.count(), 1)
 
-    def test_003_number_of_datasets(self):
+    def test_002_number_of_datasets(self):
         """Checks that number of experiments is equal to 1
         """
         self.assertEqual(Dataset.objects.all().count(), 1)
@@ -114,7 +122,10 @@ class TestMytardisHSM(TestCase):
         mock_stat.return_value = Stats(st_size=10000,
                                        st_blocks=100,
                                        st_mtime=datetime.now())
-        self.assertTrue(dfo_online(self.dfo1))
+        dfo_online(
+            self.dfo1,
+            callback=lambda tr: self.assertTrue(tr.get_or_raise())
+        )
 
     @mock.patch("os.stat")
     def test_004_dfo_offline(self, mock_stat):
@@ -123,25 +134,23 @@ class TestMytardisHSM(TestCase):
         mock_stat.return_value = Stats(st_size=10000,
                                        st_blocks=0,
                                        st_mtime=datetime.now())
-        self.assertFalse(dfo_online(self.dfo1))
+        dfo_online(
+            self.dfo1,
+            callback=lambda ol: self.assertFalse(ol.get_or_raise())
+        )
 
     def test_005_dfo_non_disk(self):
-        """Files in StorageBoxes with a django_storage_class other than
-        those specified in settings should not be processed"""
+        """Files in StorageBoxes without HSMConfig should be online by default"""
         dfo2 = DataFileObject(datafile=self.df1,
                               storage_box=self.sbox2,
                               uri="stream/test.jpg",
                               verified=True)
-        self.assertRaises(StorageClassNotSupportedError, dfo_online, dfo2)
+        dfo2.save()
 
-        with self.settings(
-            HSM_STORAGE_CLASSES=["random.storage.CLASS"]
-        ):
-            self.assertRaises(
-                StorageClassNotSupportedError,
-                dfo_online,
-                self.dfo1
-            )
+        dfo_online(
+            dfo2,
+            callback=lambda ol: self.assertTrue(ol.get_or_raise())
+        )
 
     def test_006_hsm_schema(self):
         """HSM schema should be installed"""
@@ -156,7 +165,13 @@ class TestMytardisHSM(TestCase):
         df2 = DataFile(dataset=self.dataset,
                        filename="test_df.jpg")
         df2.save()
-        self.assertRaises(DataFileNotVerified, df_online, df2)
+
+        self.assertRaises(
+            DataFileNotVerified,
+            df_online,
+            df2,
+            callback=lambda ol: ol.get_or_raise()
+        )
 
         dfo2 = DataFileObject(datafile=df2,
                               storage_box=self.sbox1,
@@ -164,4 +179,9 @@ class TestMytardisHSM(TestCase):
                               verified=False)
         dfo2.save()
 
-        self.assertRaises(DataFileObjectNotVerified, dfo_online, dfo2)
+        self.assertRaises(
+            DataFileObjectNotVerified,
+            dfo_online,
+            dfo2,
+            callback=lambda ol: ol.get_or_raise()
+        )
