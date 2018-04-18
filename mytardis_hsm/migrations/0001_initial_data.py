@@ -4,21 +4,29 @@
 mytardis_hsm app."""
 
 from django.conf import settings
-from django.db import migrations
+from django.db import migrations, models
+from mytardis_hsm.models import HSMConfig
 from mytardis_hsm.mytardis_hsm import (
     HSM_DATAFILE_NAMESPACE,
     HSM_DATASET_NAMESPACE,
     df_online
 )
-from tardis.tardis_portal.models import (Schema, ParameterName, Dataset,
-                                         DataFile, DatafileParameter,
-                                         DatasetParameterSet,
-                                         DatafileParameterSet)
+from tardis.tardis_portal.models import (
+    Schema,
+    ParameterName,
+    Dataset,
+    DataFile,
+    DatafileParameter,
+    DatasetParameterSet,
+    DatafileParameterSet,
+    StorageBox
+)
 
 
 def forward_func(apps, schema_editor):
     """Create HSM Schema and online ParameterName"""
     db_alias = schema_editor.connection.alias
+
     df_schema = Schema.objects\
         .using(db_alias)\
         .create(namespace=HSM_DATAFILE_NAMESPACE,
@@ -42,7 +50,6 @@ def forward_func(apps, schema_editor):
             full_name="Is Online",
             schema=df_schema)
 
-    min_file_size = getattr(settings, "HSM_MIN_FILE_SIZE", 500)
     for ds in Dataset.objects.using(db_alias).all():
         DatasetParameterSet.objects\
             .using(db_alias)\
@@ -57,7 +64,7 @@ def forward_func(apps, schema_editor):
             dp = DatafileParameter.objects\
                 .using(db_alias)\
                 .create(parameterset=dfps, name=param_name)
-            dp.string_value = str(df_online(df, min_file_size))
+            dp.string_value = str(True)
             dp.save()
 
 
@@ -89,6 +96,10 @@ def reverse_func(apps, schema_editor):
     df_schema.delete()
     ds_schema.delete()
 
+    HSMConfig.objects\
+        .using(db_alias)\
+        .delete()
+
 
 class Migration(migrations.Migration):
     """HSM Schema and online ParameterName migrations"""
@@ -97,5 +108,31 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
+        migrations.CreateModel(
+            name="HSMConfig",
+            fields=[
+                ('id', models.AutoField(
+                    verbose_name='ID',
+                    serialize=False,
+                    auto_created=True,
+                    primary_key=True
+                )),
+                ('storage_box',
+                 models.OneToOneField(to=StorageBox,
+                                      related_name="hsm_config")),
+                ('status_checker', models.CharField(
+                    choices=getattr(settings, "HSM_INTERFACES",
+                                    HSMConfig.DEFAULT_HSM_INTERFACES),
+                    default=HSMConfig.NONE,
+                    max_length=200
+                )),
+                ('retriever', models.CharField(
+                    choices=getattr(settings, "HSM_INTERFACES",
+                                    HSMConfig.DEFAULT_HSM_INTERFACES),
+                    default=HSMConfig.NONE,
+                    max_length=200
+                ))
+            ]
+        ),
         migrations.RunPython(forward_func, reverse_func),
     ]

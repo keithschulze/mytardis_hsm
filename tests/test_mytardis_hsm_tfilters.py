@@ -14,6 +14,7 @@ from datetime import datetime
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.test import (TestCase, modify_settings)
+from mytardis_hsm.models import HSMConfig
 from mytardis_hsm.mytardis_hsm import (DEFAULT_HSM_CLASSES,
                                        HSM_DATAFILE_NAMESPACE,
                                        OnlineParamExistsError,
@@ -85,6 +86,13 @@ class MyTardisHSMTFiltersTestCase(TestCase):
                                          key="location",
                                          value=tempfile.gettempdir())
         sbox1_loc_opt.save()
+
+        sbox1_hsm_config = HSMConfig(
+            storage_box=self.sbox1,
+            status_checker=HSMConfig.FILESYSTEM
+        )
+        sbox1_hsm_config.save()
+
 
         self.sbox2 = StorageBox(
             name="SBOX2",
@@ -165,7 +173,7 @@ class MyTardisHSMTFiltersTestCase(TestCase):
         self.assertEquals(params.count(), 1)
 
         self.assertRaises(OnlineParamExistsError,
-                          create_df_status(df1, HSM_DATAFILE_NAMESPACE, 500))
+                          create_df_status(df1, HSM_DATAFILE_NAMESPACE))
 
         params = DatafileParameter.objects.filter(
             parameterset=paramset,

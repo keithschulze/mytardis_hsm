@@ -5,15 +5,20 @@ models"""
 
 import logging
 import os
-import hsm
 
-from django.conf import settings
-from tardis.tardis_portal.models import (StorageBoxOption, DataFile,
-                                         Dataset,
-                                         DatafileParameter,
-                                         DatafileParameterSet,
-                                         ParameterName,
-                                         Schema)
+from celery.five import monotonic
+from django.core.cache import caches
+from tardis.tardis_portal.models import (
+    DataFile,
+    Dataset,
+    DatafileParameter,
+    DatafileParameterSet,
+    ParameterName,
+    Schema,
+    StorageBoxOption
+)
+from .hsm import HSMDummy
+from .models import HSMConfig, MultipleHSMConfigError
 
 
 LOGGER = logging.getLogger(__name__)
@@ -44,11 +49,13 @@ HSM_DATASET_NAMESPACE = "http://tardis.edu.au/schemas/hsm/dataset/1"
 class DataFileNotVerified(Exception):
     """Exception raied when an operation is attempted on an
     unverified DataFile"""
+    pass
 
 
 class DataFileObjectNotVerified(Exception):
     """Exception raied when an operation is attempted on an
     unverified DataFile"""
+    pass
 
 
 class StorageClassNotSupportedError(Exception):
@@ -64,79 +71,80 @@ class OnlineParamExistsError(Exception):
     pass
 
 
-def dfo_online(dfo, min_file_size=350):
+def _get_checker(storage_box):
+    """Get a online HSM status checker for given storage box.
+
+    Parameters
+    ----------
+    storage_box: StorageBox
+        StorageBox to get HSM online checker for
+
+    Returns
+    -------
+    checker: AbstractHSMChecker
+        Instance able to check online status of files in `storage_box`
+    """
+    sbs = HSMConfig.objects.filter(storage_box=storage_box)
+
+    if sbs.count() == 0:
+        return HSMDummy()
+    elif sbs.count() == 1:
+        return sbs.first().create_status_checker()
+    else:
+        raise MultipleHSMConfigError(
+            "StorageBox %s has mutliple HSMConfig configs." % storage_box)
+
+
+def dfo_online(dfo, callback):
     """Checks whether the underlying file of a DataFileObject is online
 
     Parameters
     ----------
-    dfo : DataFileObject
-        The DataFileObject for which to check the status
-    min_file_size : int, optional
-        minimum size of files that could be stored in
-        in the inode.
-
-    Returns
-    -------
-    bool
-        Status for whether dfo is online.
+    dfo: DataFileObject
+        DataFileObject to check online status of
+    callback : Function
+        Single argument function that will passed the result of this async
+        computation. Callback should expect the result to be a `Try`, where
+        a successful computation will be represented by a `Success`
+        intance, while a failed computation will hold by wrapped in a
+        `Failure` instance. Callback should avoid avoid long-running
+        computations as this will block the `_result_handler` thread until
+        the computation completes.
 
     Raises
     ------
     DataFileObjectNotVerified
         If dfo is unverified
-    StorageClassNotSupportedError
-        If the `django_storage_class` for the StorageBox of the input
-        DataFileObject is not supported
     """
     if dfo.verified:
-        storage_classes = getattr(settings,
-                                  "HSM_STORAGE_CLASSES",
-                                  DEFAULT_HSM_CLASSES)
-        if dfo.storage_box.django_storage_class in storage_classes:
-            try:
-                location = dfo.storage_box.options.get(key="location").value
-                filepath = os.path.join(location, dfo.uri)
-                return hsm.online(filepath, min_file_size)
-            except StorageBoxOption.DoesNotExist:
-                LOGGER.debug("DataFileObject with id %s doesn't have a file"
-                             "system path/location", dfo.id)
-        else:
-            msg = (
-                "You have tried to check the online/offline status of a\n"
-                "DataFileObject with data in a StorageBox with an\n"
-                "unsupported `django_storage_class`. The supported \n"
-                "`django_storage_class` are declared by the\n"
-                "`django.conf.settings.HSM_STORAGE_CLASSES` variable.\n"
-                "By default this is set by the DEFAULT_HSM_CLASSES\n"
-                "variable above. If the storage class you are using supports\n"
-                "file path based access and the StorageBox has a\n"
-                "StorageBoxOption with a `location` key, then you should\n"
-                "declare it in your settings.py using the HSM_STORAGE_CLASSES"
-                "\nkey.\n\n"
-                "For example, to add another storage class:\n"
-                "    HSM_STORAGE_CLASSES = settings.HSM_STORAGE_CLASSES \\\n"
-                "                          + ['another.storage.Class']\n\n"
-                "or to override storage classes:\n"
-                "    HSM_STORAGE_CLASSES = ['another.storage.Class']"
-            )
-            raise StorageClassNotSupportedError(msg)
+        try:
+            checker = _get_checker(dfo.storage_box)
+            checker.online(dfo, callback)
+        except StorageBoxOption.DoesNotExist as exc:
+            LOGGER.error(" storagebox id %s does not exist: %s",
+                         dfo.storage_box.id, exc)
     else:
         raise DataFileObjectNotVerified(
             "Cannot check online status of unverified DataFileObject: %s"
             % dfo.id)
 
 
-def df_online(datafile, min_file_size=350):
+def df_online(datafile, callback):
     """Checks whether the primary/preferred download DataFileObject backing
     a DataFile is online.
 
     Parameters
     ----------
-    df: DataFile
-        The DataFile record to check the online status of
-    min_file_size : int, optional
-        minimum size of files that could be stored in
-        in the inode.
+    datafile: DataFile
+        Tuple with DataFile record and Schema to check the online status of
+    callback : Function
+        Single argument function that will passed the result of this async
+        computation. Callback should expect the result to be a `Try`, where
+        a successful computation will be represented by a `Success`
+        intance, while a failed computation will hold by wrapped in a
+        `Failure` instance. Callback should avoid avoid long-running
+        computations as this will block the `_result_handler` thread until
+        the computation completes.
 
     Returns
     -------
@@ -150,7 +158,7 @@ def df_online(datafile, min_file_size=350):
         DataFileObject is not supported
     """
     if datafile.verified:
-        return dfo_online(datafile.get_preferred_dfo(), min_file_size)
+        return dfo_online(datafile.get_preferred_dfo(), callback)
     else:
         raise DataFileNotVerified(
             "Cannot check online status of unverified DataFile: %s"
@@ -238,3 +246,65 @@ def experiment_online(experiment):
     dfs = Dataset.objects.filter(experiments=experiment)
 
     return all(dataset_online(df) for df in dfs)
+
+
+class DatafileLock(object):
+    """Helper class to manage the acquisition and release of locks for
+    working with a datafile.
+
+    Attributes
+    ----------
+    datafile: Datafile
+        Datafile for which to acquire a lock over
+    oid: str
+        Unique id for the object acquiring lock
+    cache_name: str, optional
+        Name of cache holding the locks
+    expires: int, optional
+        Number of seconds for which the lock is valid. Default is 5 min.
+
+    Examples
+    --------
+    The main way to use this class if using the Python *with* syntax:
+
+    >>> with DatafileLock(datafile, "oid_from_somewhere") as lock:
+    ...     if lock:
+    ...         # do something interesting
+    ...         print "I successfully got the lock"
+
+    """
+
+    def __init__(self, datafile, oid, cache_name="default",
+                 expires=300):
+        self.lockid = DatafileLock.generate_lockid(datafile.id)
+        self.oid = oid
+        self.cache = caches[cache_name]
+        self.expires = expires
+        self.expires_at = monotonic() + expires - 3
+
+    def __enter__(self):
+        return self.acquire()
+
+    def __exit__(self, type, value, traceback):
+        self.release()
+
+    @staticmethod
+    def generate_lockid(datafile_id):
+        """Return a lock id for a datafile"""
+        return "mt-hsm-lock-%d" % datafile_id
+
+    def acquire(self):
+        """Acquire lock for a datafile to prevent filters from running
+        mutliple times on the same datafile in quick succession.
+
+        Returns
+        -------
+        locked: boolean
+            Boolean representing whether datafile is locked
+        """
+        return self.cache.add(self.lockid, self.oid, self.expires)
+
+    def release(self):
+        """ Release lock on datafile."""
+        if monotonic() < self.expires_at:
+            self.cache.delete(self.lockid)

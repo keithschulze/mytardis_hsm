@@ -7,8 +7,10 @@ import time
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.test import TestCase
-from mytardis_hsm.mytardis_hsm import DEFAULT_HSM_CLASSES
-from mytardis_hsm.utils import DatafileLock
+from mytardis_hsm.mytardis_hsm import (
+    DEFAULT_HSM_CLASSES,
+    DatafileLock
+)
 from tardis.tardis_portal.models import (Experiment, Dataset, Facility, Group,
                                          Instrument, DataFileObject,
                                          StorageBox, StorageBoxAttribute,
